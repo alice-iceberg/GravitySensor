@@ -1,15 +1,23 @@
 package com.aliceberg.gravitysensor;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
+
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -18,8 +26,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor mGravity;
     private boolean isGravitySensorPresent;
 
+    Handler cameraHandler = new Handler();
+
+
+
+
+
+
+    //y is showing vertical position! value[1]
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -27,6 +45,25 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         textView_x = findViewById(R.id.xTextView);
         textView_y = findViewById(R.id.yTextView);
         textView_z = findViewById(R.id.zTextView);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
+            manager.registerAvailabilityCallback(new CameraManager.AvailabilityCallback() {
+                @Override
+                public void onCameraAvailable(String cameraId) {
+                    super.onCameraAvailable(cameraId);
+                    Log.e("TAG", "onCameraAvailable: Camera off");
+                    //Do your work
+                }
+
+                @Override
+                public void onCameraUnavailable(String cameraId) {
+                    super.onCameraUnavailable(cameraId);
+                    Log.e("TAG", "onCameraUnavailable: Camera on");
+                    //Do your work
+                }
+            }, cameraHandler);
+        }
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 
@@ -47,10 +84,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         textView_y.setText(sensorEvent.values[1] + "m/s2");
         textView_z.setText(sensorEvent.values[2] + "m/s2");
 
-        if(sensorEvent.values[2] < -9.7){
+        if (sensorEvent.values[2] < -9.7) {
             getWindow().getDecorView().setBackgroundColor(Color.GREEN);
-        }
-        else{
+        } else {
             getWindow().getDecorView().setBackgroundColor(Color.WHITE);
         }
     }
@@ -73,5 +109,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onPause();
         if (sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY) != null)
             sensorManager.unregisterListener(this, mGravity);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }
